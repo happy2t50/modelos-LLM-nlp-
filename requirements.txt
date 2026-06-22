@@ -1,0 +1,25 @@
+# === Núcleo ===
+torch>=2.0.0
+torchvision>=0.15.0
+timm>=0.9.0                  # EfficientNet-B4
+
+# === Búsqueda léxica ===
+scikit-learn>=1.3.0
+
+# === Búsqueda semántica ===
+sentence-transformers>=2.2.0
+
+# === NLP ligero ===
+nltk>=3.8.0
+
+# === Base de datos ===
+# sqlite3 viene en la stdlib de Python — no se lista aquí
+
+# === PDF (carga de documentos) ===
+pypdf>=3.0.0
+
+# === HTTP (Ollama) ===
+requests>=2.31.0
+
+# === Utilidades ===
+numpy>=1.24.0

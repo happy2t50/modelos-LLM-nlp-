@@ -35,3 +35,6 @@ datos/embeddings/
 # OS
 .DS_Store
 Thumbs.db
+
+# Claude Code — configuración local de permisos (específica de la máquina)
+.claude/settings.local.json

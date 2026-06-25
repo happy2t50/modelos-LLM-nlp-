@@ -20,7 +20,9 @@ from modulos.almacen_documentos import (
     recuperar_topk,
 )
 from modulos.busqueda_semantica import construir_embeddings
-from modulos.asistente import consultar, precargar_cache
+from modulos.asistente import (
+    consultar, precargar_cache, _priorizar_cultivo, _filtrar_relevantes,
+)
 
 _DIR = Path(__file__).resolve().parent.parent
 _BD = _DIR / "datos" / "test_asistente.db"
@@ -157,6 +159,34 @@ def test_offline_filtra_por_cultivo():
     mis_cultivos.agregar("tomate", ruta_bd=_BD)
 
 
+def test_refinamiento():
+    print("\n─── TEST 6: refinamiento (cultivo diagnosticado + relevancia) ───")
+    docs = [
+        {"cultivo": "calabaza", "enfermedad": "oídio", "score_hibrido": 0.45},
+        {"cultivo": "maíz", "enfermedad": "mancha foliar", "score_hibrido": 0.30},
+    ]
+    # Priorizar calabaza: el doc de maíz debe descartarse aunque su score sea alto.
+    priorizados = _priorizar_cultivo(docs, "calabaza")
+    print(f"  priorizar 'calabaza': {[d['cultivo'] for d in priorizados]}")
+    assert len(priorizados) == 1 and priorizados[0]["cultivo"] == "calabaza"
+
+    # Si el cultivo diagnosticado no tiene documentos, se devuelven todos (fallback).
+    fallback = _priorizar_cultivo(docs, "frijol")
+    assert len(fallback) == 2, "Sin doc del cultivo debe caer en fallback (todos)"
+    print("  OK: prioriza el cultivo diagnosticado y hace fallback si no hay.")
+
+    # Relevancia: descarta los muy por debajo del mejor (ratio 0.30).
+    docs2 = [
+        {"cultivo": "tomate", "enfermedad": "a", "score_hibrido": 1.00},
+        {"cultivo": "tomate", "enfermedad": "b", "score_hibrido": 0.50},
+        {"cultivo": "tomate", "enfermedad": "c", "score_hibrido": 0.10},  # < 0.30*1.0
+    ]
+    relevantes = _filtrar_relevantes(docs2)
+    print(f"  relevantes: {[d['enfermedad'] for d in relevantes]}")
+    assert [d["enfermedad"] for d in relevantes] == ["a", "b"]
+    print("  OK: descarta documentos por debajo del umbral de relevancia.")
+
+
 if __name__ == "__main__":
     limpiar()
     try:
@@ -166,6 +196,7 @@ if __name__ == "__main__":
         test_consulta_online()
         test_consulta_offline()
         test_offline_filtra_por_cultivo()
+        test_refinamiento()
         print("\nTodos los tests de Fase 7 pasaron.\n")
     finally:
         limpiar()

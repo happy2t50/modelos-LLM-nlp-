@@ -87,10 +87,15 @@ def _construir_prompt(
 
 REGLAS IMPORTANTES (obligatorias):
 1. Responde ÚNICAMENTE con información contenida en los DOCUMENTOS de abajo.
-2. Si algo no está en los documentos, di claramente "No tengo esa información en mis documentos". NO lo inventes.
-3. NUNCA inventes dosis, productos ni tratamientos que no aparezcan en los documentos.
-4. Recuerda al final que la respuesta es orientativa y conviene confirmar con un agrónomo.
-5. Responde en español.
+2. Si los documentos SÍ contienen dosis, productos o pasos de tratamiento, DEBES
+   incluirlos textualmente en tu respuesta. NO digas "no tengo esa información"
+   cuando la información sí aparece en los documentos: léelos con atención.
+3. Solo si algo realmente NO está en los documentos, di "No tengo esa información
+   en mis documentos". NUNCA inventes dosis, productos ni tratamientos.
+4. Usa principalmente los documentos del MISMO cultivo y enfermedad del diagnóstico;
+   ignora los documentos que traten de otro cultivo distinto.
+5. Recuerda al final que la respuesta es orientativa y conviene confirmar con un agrónomo.
+6. Responde en español.
 
 DIAGNÓSTICO DEL SISTEMA (imagen + texto):
 - Cultivo: {cultivo}
@@ -108,7 +113,7 @@ DIAGNÓSTICO:
 (breve confirmación de la enfermedad y el cultivo)
 
 TRATAMIENTO:
-(qué hacer; incluye dosis y productos SOLO si aparecen en los documentos)
+(qué hacer; SI los documentos mencionan dosis y productos concretos, INCLÚYELOS aquí)
 
 PREVENCIÓN:
 (cómo evitar que vuelva)

@@ -53,11 +53,50 @@ def _clasificar(imagen) -> dict:
 # Recuperación de documentos según el modo
 # ─────────────────────────────────────────────
 
-def _buscar_online(consulta, cultivos, enfermedad, top_k,
+# Un documento se considera relevante si su score híbrido es al menos esta
+# fracción del mejor score. Evita pasar al LLM documentos flojos cuando el
+# almacén es pequeño.
+_RATIO_RELEVANCIA = 0.30
+
+
+def _filtrar_relevantes(documentos: list[dict], ratio: float = _RATIO_RELEVANCIA) -> list[dict]:
+    """
+    Conserva solo los documentos cuyo 'score_hibrido' sea >= ratio * mejor_score.
+    Si los documentos no traen score (p. ej. vienen del caché), se devuelven tal cual.
+    """
+    if not documentos:
+        return documentos
+    mejor = documentos[0].get("score_hibrido")
+    if mejor is None or mejor <= 0:
+        return documentos  # sin score útil: no se puede filtrar por relevancia
+    umbral = ratio * mejor
+    return [d for d in documentos if (d.get("score_hibrido") or 0) >= umbral]
+
+
+def _priorizar_cultivo(documentos: list[dict], cultivo_diag: str) -> list[dict]:
+    """
+    Si hay documentos del cultivo diagnosticado, devuelve SOLO esos (evita que se
+    cuele un documento de otro cultivo que BERT ve semánticamente parecido).
+    Si no hay ninguno de ese cultivo, devuelve la lista original (mejor algo que nada).
+    """
+    if not documentos or not cultivo_diag:
+        return documentos
+    cd = cultivo_diag.strip().lower()
+    del_cultivo = [d for d in documentos if d.get("cultivo", "").lower() == cd]
+    return del_cultivo if del_cultivo else documentos
+
+
+def _refinar(documentos: list[dict], cultivo_diag: str) -> list[dict]:
+    """Prioriza el cultivo diagnosticado y luego filtra por relevancia."""
+    return _filtrar_relevantes(_priorizar_cultivo(documentos, cultivo_diag))
+
+
+def _buscar_online(consulta, cultivos, cultivo_diag, enfermedad, top_k,
                    ruta_bd, ruta_tfidf, ruta_embeddings) -> list[dict]:
     """
     Modo online: busca 'fresco' en el almacén local (híbrido TF-IDF + BERT),
-    filtrado por cultivos, y GUARDA el Top-K en el caché para el modo offline.
+    filtrado por cultivos, refina (cultivo diagnosticado + relevancia) y GUARDA el
+    Top-K refinado en el caché para el modo offline.
 
     Nota: hoy la fuente de documentos es local (ver CLAUDE.md). Cuando exista una
     fuente remota (Google Drive), la búsqueda fresca consultaría esa fuente; el
@@ -67,12 +106,13 @@ def _buscar_online(consulta, cultivos, enfermedad, top_k,
         consulta, cultivos=cultivos, top_k=top_k,
         ruta_bd=ruta_bd, ruta_tfidf=ruta_tfidf, ruta_embeddings=ruta_embeddings,
     )
+    documentos = _refinar(documentos, cultivo_diag)
     if documentos and enfermedad:
         guardar_topk(enfermedad, documentos, ruta_bd=ruta_bd)
     return documentos
 
 
-def _buscar_offline(consulta, cultivos, enfermedad, top_k,
+def _buscar_offline(consulta, cultivos, cultivo_diag, enfermedad, top_k,
                     ruta_bd, ruta_tfidf, ruta_embeddings) -> list[dict]:
     """
     Modo offline: primero intenta el caché Top-K de esa enfermedad; si está vacío,
@@ -84,14 +124,17 @@ def _buscar_offline(consulta, cultivos, enfermedad, top_k,
         if cultivos:
             cl = [c.lower() for c in cultivos]
             cacheados = [d for d in cacheados if d.get("cultivo", "").lower() in cl]
+        # Prioriza el cultivo diagnosticado (los scores no aplican en caché).
+        cacheados = _priorizar_cultivo(cacheados, cultivo_diag)
         if cacheados:
             return cacheados[:top_k]
 
     # Sin caché útil: búsqueda híbrida local (TF-IDF + BERT funcionan offline).
-    return buscar_hibrido(
+    documentos = buscar_hibrido(
         consulta, cultivos=cultivos, top_k=top_k,
         ruta_bd=ruta_bd, ruta_tfidf=ruta_tfidf, ruta_embeddings=ruta_embeddings,
     )
+    return _refinar(documentos, cultivo_diag)
 
 
 # ─────────────────────────────────────────────
@@ -145,6 +188,7 @@ def consultar(
     diagnostico = fusion.combinar(resultado_cnn, sintomas)
     consulta_ir = diagnostico["consulta"]
     enfermedad = diagnostico["enfermedad"]
+    cultivo_diag = diagnostico["cultivo"]
 
     # 3b) Avisos sobre la imagen / cultivo (Fase 8)
     avisos = _avisos_imagen(resultado_cnn, diagnostico, cultivos)
@@ -159,12 +203,12 @@ def consultar(
     # 5) Recuperar documentos según el modo
     if online:
         documentos = _buscar_online(
-            consulta_ir, cultivos, enfermedad, top_k,
+            consulta_ir, cultivos, cultivo_diag, enfermedad, top_k,
             ruta_bd, ruta_tfidf, ruta_embeddings,
         )
     else:
         documentos = _buscar_offline(
-            consulta_ir, cultivos, enfermedad, top_k,
+            consulta_ir, cultivos, cultivo_diag, enfermedad, top_k,
             ruta_bd, ruta_tfidf, ruta_embeddings,
         )
 

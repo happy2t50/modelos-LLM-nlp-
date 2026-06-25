@@ -1,7 +1,7 @@
 # === Núcleo ===
 torch>=2.0.0
-torchvision>=0.15.0
-timm>=0.9.0                  # EfficientNet-B4
+torchvision>=0.15.0         # EfficientNet-B4 (modelo de la CNN)
+pillow>=9.0.0               # carga de imágenes para la CNN
 
 # === Búsqueda léxica ===
 scikit-learn>=1.3.0

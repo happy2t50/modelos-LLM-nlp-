@@ -40,12 +40,13 @@ _TOP_K = 10
 # Stub de la CNN (se reemplaza en la Fase 8)
 # ─────────────────────────────────────────────
 
-def _clasificar_stub(imagen) -> dict:
+def _clasificar(imagen) -> dict:
     """
-    Marcador de posición de la CNN hasta la Fase 8. Devuelve un diagnóstico
-    vacío de baja confianza. En la Fase 8, clasificador.predecir() ocupa su lugar.
+    Ejecuta la CNN real (Fase 8) sobre la imagen. Importación perezosa para no
+    cargar el modelo (~71 MB) cuando se inyecta `resultado_cnn` (p. ej. en pruebas).
     """
-    return {"cultivo": "", "enfermedad": "", "confianza": 0.0}
+    from modulos import clasificador
+    return clasificador.predecir(imagen)
 
 
 # ─────────────────────────────────────────────
@@ -140,10 +141,13 @@ def consultar(
 
     # 3) Diagnóstico CNN + fusión
     if resultado_cnn is None:
-        resultado_cnn = _clasificar_stub(imagen)
+        resultado_cnn = _clasificar(imagen)
     diagnostico = fusion.combinar(resultado_cnn, sintomas)
     consulta_ir = diagnostico["consulta"]
     enfermedad = diagnostico["enfermedad"]
+
+    # 3b) Avisos sobre la imagen / cultivo (Fase 8)
+    avisos = _avisos_imagen(resultado_cnn, diagnostico, cultivos)
 
     # 4) Decidir modo
     if forzar_offline is None:
@@ -172,10 +176,45 @@ def consultar(
         "cultivos": cultivos,
         "diagnostico": diagnostico,
         "sintomas": sintomas,
+        "avisos": avisos,
         "n_documentos": len(documentos),
         "documentos": documentos,
         "respuesta": respuesta,
     }
+
+
+# ─────────────────────────────────────────────
+# Avisos sobre la imagen / cultivo (Fase 8)
+# ─────────────────────────────────────────────
+
+_UMBRAL_CONFIANZA = 0.50
+
+
+def _avisos_imagen(resultado_cnn: dict, diagnostico: dict, cultivos: list) -> list[str]:
+    """
+    Genera avisos para el usuario:
+      - Confianza baja (< 50%): la foto puede no ser una hoja válida.
+      - El cultivo detectado no está en 'mis cultivos'.
+    """
+    avisos = []
+
+    confianza = float(resultado_cnn.get("confianza", 0.0))
+    if resultado_cnn.get("confianza_baja") or confianza < _UMBRAL_CONFIANZA:
+        avisos.append(
+            f"La confianza de la imagen es baja ({confianza:.0%}). "
+            "Puede que la foto no sea una hoja válida, esté borrosa o mal encuadrada."
+        )
+
+    cultivo_pred = (diagnostico.get("cultivo") or "").strip()
+    if cultivo_pred and cultivos:
+        registrados = {c.lower() for c in cultivos}
+        if cultivo_pred.lower() not in registrados:
+            avisos.append(
+                f"El cultivo detectado ('{cultivo_pred}') no está en tus cultivos "
+                "registrados. Revisa que la foto corresponda a tu parcela."
+            )
+
+    return avisos
 
 
 # ─────────────────────────────────────────────

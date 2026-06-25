@@ -31,7 +31,7 @@ Funciona **online/offline con degradación**:
 ## Stack técnico
 
 - **Lenguaje:** Python [3.11]
-- **LLM:** Qwen vía **Ollama** (API HTTP local en http://localhost:11434). [modelo: qwen3:4b — evaluar uno más pequeño para móvil]
+- **LLM:** Qwen vía **Ollama** (API HTTP local en http://localhost:11434). [modelo: qwen3.5:0.8b — modelo pequeño para móvil/offline]
 - **Embeddings/búsqueda semántica:** **BERT** vía Sentence-BERT (sentence-transformers).
 - **Búsqueda léxica:** TF-IDF (scikit-learn).
 - **Base local:** SQLite (documentos, caché Top-K, mis cultivos).

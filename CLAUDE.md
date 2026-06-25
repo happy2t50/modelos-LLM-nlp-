@@ -27,6 +27,10 @@ Funciona **online/offline con degradación**:
 - **Caché en SQLite por TOP-K**: se guardan los 10 mejores documentos por enfermedad. Se pre-carga ("semilla") según los cultivos del usuario.
 - **"Mis cultivos"**: función local (tabla SQLite) donde el usuario registra los cultivos de su parcela. Filtra búsquedas y pre-carga. NO es sistema de cuentas.
 - **3 roles**: agricultor (respuesta simple), aprendiz (respuesta técnica), gestor (admin; exploratorio, ver Fase 10). El login se maneja en el back/app móvil, fuera del código Python del RAG.
+- **Despliegue: nube + dispositivo (SIN laptop local de zona).**
+  - **Online (con cobertura):** el móvil es cliente delgado; la búsqueda híbrida y el LLM corren en **servidores en la nube** (ahí el LLM puede ser grande). El Ollama local de `generador.py` es solo el entorno de desarrollo; en producción apunta al endpoint en la nube.
+  - **Offline (sin cobertura):** el móvil responde solo con lo que tiene a bordo → caché SQLite Top-K + TF-IDF + BERT pequeño + **Qwen 0.8b en el dispositivo**. Por eso el LLM offline es pequeño.
+  - Descartado: laptop local como "servidor de zona".
 
 ## Stack técnico
 
@@ -65,7 +69,6 @@ Funciona **online/offline con degradación**:
 
 ## Decisiones pendientes
 
-- Dónde corren Qwen y BERT en modo offline (móvil con modelos pequeños vs laptop local como servidor de zona). Afecta el empaquetado final.
 - Fuente de documentos: locales por ahora; Google Drive en la versión final.
 - Fuente para scraping de productos: [por definir].
 - Requisito de Minería: posiblemente cubierto por el mapa epidemiológico (Fase 10). Confirmar con el profesor.

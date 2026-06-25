@@ -11,6 +11,7 @@ Reglas de seguridad del dominio (CLAUDE.md):
 """
 
 import re
+import os
 import json
 from typing import Optional
 
@@ -19,10 +20,14 @@ import requests
 # ─────────────────────────────────────────────
 # Configuración de Ollama / Qwen
 # ─────────────────────────────────────────────
+# Configurable por entorno para el despliegue nube/dispositivo (ver CLAUDE.md):
+#   - Desarrollo / offline en el móvil → Ollama local (valores por defecto).
+#   - Online en producción → exportar OLLAMA_URL / QWEN_MODELO al endpoint en la nube
+#     (ahí el modelo puede ser más grande, p. ej. qwen3.5:4b).
 
-_URL_OLLAMA = "http://localhost:11434/api/generate"
-_MODELO = "qwen3.5:0.8b"      # modelo pequeño para móvil/offline
-_TIMEOUT = 120                 # segundos; los modelos locales pueden tardar
+_URL_OLLAMA = os.environ.get("OLLAMA_URL", "http://localhost:11434/api/generate")
+_MODELO = os.environ.get("QWEN_MODELO", "qwen3.5:0.8b")  # 0.8b: a bordo del móvil (offline)
+_TIMEOUT = int(os.environ.get("OLLAMA_TIMEOUT", "120"))  # segundos
 _MAX_CHARS_DOC = 3500          # recorta cada documento para no saturar el contexto
 
 # Roles válidos y su descripción de estilo

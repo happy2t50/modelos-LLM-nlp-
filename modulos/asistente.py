@@ -145,6 +145,7 @@ def consultar(
     imagen,
     texto: str,
     rol: str = "agricultor",
+    cultivos: Optional[list] = None,
     resultado_cnn: Optional[dict] = None,
     forzar_offline: Optional[bool] = None,
     fn_generar: Optional[Callable] = None,
@@ -161,6 +162,10 @@ def consultar(
                         opcional si se inyecta resultado_cnn).
         texto:          Texto de síntomas del usuario.
         rol:            'agricultor' o 'aprendiz'.
+        cultivos:       Cultivos para filtrar. None = se leen de 'mis_cultivos'
+                        (CLI). Una lista (incluida la vacía []) los fija
+                        explícitamente: la interfaz pasa los que elige el
+                        agricultor, o [] para el aprendiz (sin filtro de parcela).
         resultado_cnn:  Diagnóstico de la CNN ya calculado (Fase 8 lo provee la
                         CNN real); si es None se usa el stub.
         forzar_offline: None = detectar internet; True = forzar offline;
@@ -176,8 +181,11 @@ def consultar(
     if fn_generar is None:
         fn_generar = generador.responder
 
-    # 1) Cultivos de la parcela (filtro)
-    cultivos = mis_cultivos.listar(ruta_bd=ruta_bd)
+    # 1) Cultivos de la parcela (filtro). Si no se pasan explícitamente, se leen
+    #    de 'mis_cultivos' (uso por CLI). La interfaz los pasa según el rol:
+    #    el agricultor elige los suyos; el aprendiz manda [] (sin filtro).
+    if cultivos is None:
+        cultivos = mis_cultivos.listar(ruta_bd=ruta_bd)
 
     # 2) NLP del texto
     sintomas = extraer_sintomas(texto)

@@ -43,7 +43,8 @@ def _crear_tablas(con: sqlite3.Connection) -> None:
             enfermedad TEXT   NOT NULL,
             fuente    TEXT    DEFAULT '',
             texto     TEXT    NOT NULL,
-            UNIQUE(cultivo, enfermedad, fuente)
+            fragmento INTEGER DEFAULT 0,   -- nº de trozo dentro de un documento largo
+            UNIQUE(cultivo, enfermedad, fuente, fragmento)
         );
 
         CREATE TABLE IF NOT EXISTS cache_topk (
@@ -114,6 +115,50 @@ def cargar_desde_directorio(
                 insertados += 1
         except sqlite3.Error as e:
             print(f"[almacen] Error al insertar {archivo.name}: {e}")
+
+    con.commit()
+    con.close()
+    return insertados
+
+
+def agregar_corpus(registros: list[dict], ruta_bd: Path = _RUTA_BD) -> int:
+    """
+    Inserta un corpus ya troceado en el almacén. Cada registro es un fragmento.
+
+    Args:
+        registros: lista de dicts con claves 'cultivo', 'enfermedad', 'fuente', 'texto'.
+                   Los fragmentos de un mismo (cultivo, enfermedad, fuente) se numeran
+                   automáticamente, de modo que volver a ejecutar es idempotente.
+
+    Returns:
+        Número de fragmentos nuevos insertados.
+    """
+    con = _conectar(ruta_bd)
+    insertados = 0
+    contador: dict = {}
+
+    for r in registros:
+        cultivo = (r.get("cultivo") or "").strip()
+        enfermedad = (r.get("enfermedad") or "").strip()
+        fuente = (r.get("fuente") or "").strip()
+        texto = (r.get("texto") or "").strip()
+        if not cultivo or not texto:
+            continue
+
+        clave = (cultivo, enfermedad, fuente)
+        frag = contador.get(clave, 0)
+        contador[clave] = frag + 1
+
+        try:
+            con.execute(
+                "INSERT OR IGNORE INTO documentos (cultivo, enfermedad, fuente, texto, fragmento) "
+                "VALUES (?, ?, ?, ?, ?)",
+                (cultivo, enfermedad, fuente, texto, frag),
+            )
+            if con.execute("SELECT changes()").fetchone()[0] > 0:
+                insertados += 1
+        except sqlite3.Error as e:
+            print(f"[almacen] Error al insertar fragmento {clave} #{frag}: {e}")
 
     con.commit()
     con.close()

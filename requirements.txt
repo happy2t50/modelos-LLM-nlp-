@@ -24,3 +24,6 @@ requests>=2.31.0
 
 # === Utilidades ===
 numpy>=1.24.0
+
+# === Interfaz de pruebas (opcional, solo para testing local) ===
+gradio>=4.0.0

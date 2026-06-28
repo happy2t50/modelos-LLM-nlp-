@@ -22,7 +22,7 @@ from PIL import Image
 
 # --- Rutas / constantes ---
 _DIR_BASE = Path(__file__).resolve().parent.parent
-_RUTA_PESOS = _DIR_BASE / "best.pth"
+_RUTA_PESOS = _DIR_BASE / "modelos" / "best.pth"
 _N_CLASES = 50
 _TAM_ENTRADA = 380           # EfficientNet-B4 nativo; ajustar si el entrenamiento usó otro
 _UMBRAL_CONFIANZA = 0.50     # por debajo: la foto puede no ser válida

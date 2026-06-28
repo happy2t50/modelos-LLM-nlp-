@@ -30,9 +30,9 @@ from torch.utils.data import DataLoader, random_split
 from torchvision import datasets, transforms, models
 from sklearn.metrics import accuracy_score, f1_score
 
-_DIR = Path(__file__).resolve().parent
+_DIR = Path(__file__).resolve().parent.parent
 _DIR_DATOS = Path(r"C:/Users/umina/OneDrive/Escritorio/Entrenamiento/Calabaza/Original/Original")
-_RUTA_REPORTE = _DIR / "METRICAS_cnn_comparacion.md"
+_RUTA_REPORTE = _DIR / "docs" / "METRICAS_cnn_comparacion.md"
 
 _TAM = 224
 _BATCH = 16

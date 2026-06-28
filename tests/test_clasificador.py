@@ -21,7 +21,7 @@ from modulos.clasificador import predecir, _separar_clase, _CULTIVO_ES
 from modulos.asistente import _avisos_imagen
 
 _DIR = Path(__file__).resolve().parent.parent
-_RUTA_PESOS = _DIR / "best.pth"
+_RUTA_PESOS = _DIR / "modelos" / "best.pth"
 
 
 # ── TEST 1: parseo de etiquetas (sin modelo) ─────────────────────────────────

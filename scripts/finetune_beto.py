@@ -31,10 +31,10 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, f1_score, classification_report
 
-_DIR = Path(__file__).resolve().parent
+_DIR = Path(__file__).resolve().parent.parent
 _RUTA_CORPUS = _DIR / "datos" / "corpus_combinado.json"
-_DIR_MODELO = _DIR / "modelo_beto"
-_RUTA_REPORTE = _DIR / "METRICAS_beto.md"
+_DIR_MODELO = _DIR / "modelos" / "modelo_beto"
+_RUTA_REPORTE = _DIR / "docs" / "METRICAS_beto.md"
 
 _MODELO_BASE = "dccuchile/bert-base-spanish-wwm-uncased"  # BETO
 _MAX_LEN = 160

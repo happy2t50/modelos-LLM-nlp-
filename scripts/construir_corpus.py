@@ -14,8 +14,12 @@ USO:
 """
 
 import re
+import sys
 import json
 from pathlib import Path
+
+# El proyecto raíz (un nivel arriba de scripts/) debe estar en sys.path para importar modulos
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from pypdf import PdfReader
 
@@ -26,7 +30,7 @@ from modulos.almacen_documentos import (
 from modulos.busqueda_semantica import construir_embeddings, _RUTA_EMBEDDINGS
 from modulos import mis_cultivos
 
-_DIR = Path(__file__).resolve().parent
+_DIR = Path(__file__).resolve().parent.parent
 _DIR_PDFS = Path(r"C:/Users/umina/OneDrive/Escritorio/documentos_fitosanitarios")
 _RUTA_JSON_COMPANERO = _DIR / "datos" / "corpus_procesado_lab1.json"
 _RUTA_JSON_COMBINADO = _DIR / "datos" / "corpus_combinado.json"

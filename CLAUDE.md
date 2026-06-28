@@ -65,7 +65,7 @@ Funciona **online/offline con degradación**:
 ## Estado actual
 
 - [x] CNN entrenada (best.pth, 50 clases, ~97%).
-- [ ] Resto de fases (ver Plan_de_trabajo_ClaudeCode_v2.md).
+- [ ] Resto de fases (ver docs/Plan_de_trabajo_ClaudeCode_v2.md).
 
 ## Decisiones pendientes
 

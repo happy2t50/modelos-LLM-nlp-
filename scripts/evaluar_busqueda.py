@@ -23,7 +23,7 @@ USO (requiere haber corrido antes construir_corpus.py):
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from modulos.almacen_documentos import buscar
 from modulos.busqueda_semantica import buscar_semantico, buscar_hibrido

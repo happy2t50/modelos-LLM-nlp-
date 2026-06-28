@@ -41,3 +41,6 @@ Thumbs.db
 
 # Claude Code — configuración local de permisos (específica de la máquina)
 .claude/settings.local.json
+
+# Material ajeno al proyecto (no versionar)
+extras/Pozos_Aguas_Profundas_Golfo_de_Mexico.pdf

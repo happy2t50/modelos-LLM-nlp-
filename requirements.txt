@@ -17,6 +17,7 @@ nltk>=3.8.0
 
 # === PDF (carga de documentos) ===
 pypdf>=3.0.0
+cryptography>=3.1           # para leer PDFs cifrados/protegidos (ej. guías del MAPA)
 
 # === HTTP (Ollama) ===
 requests>=2.31.0

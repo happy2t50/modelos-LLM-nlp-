@@ -26,6 +26,9 @@ datos/*.db
 datos/*.sqlite
 datos/*.pkl
 
+# Modelo BETO fine-tuneado (pesado, se regenera con finetune_beto.py)
+modelo_beto/
+
 # Embeddings cacheados (se regeneran)
 datos/embeddings/
 

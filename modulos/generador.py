@@ -28,7 +28,12 @@ import requests
 _URL_OLLAMA = os.environ.get("OLLAMA_URL", "http://localhost:11434/api/generate")
 _MODELO = os.environ.get("QWEN_MODELO", "qwen3.5:0.8b")  # 0.8b: a bordo del móvil (offline)
 _TIMEOUT = int(os.environ.get("OLLAMA_TIMEOUT", "120"))  # segundos
-_MAX_CHARS_DOC = 3500          # recorta cada documento para no saturar el contexto
+_MAX_CHARS_DOC = 1500          # recorta cada documento para no saturar el contexto
+# Cuántos documentos se envían al LLM. Se recuperan más (para caché y fuentes),
+# pero al prompt solo van los mejores: prompt más corto = más rápido y enfocado.
+# Importante: Ollama carga el modelo con num_ctx=4096 por defecto; mandar 10 docs
+# largos desborda ese contexto y ralentiza la generación.
+_MAX_DOCS_PROMPT = int(os.environ.get("MAX_DOCS_LLM", "4"))
 
 # Roles válidos y su descripción de estilo
 _ROLES = {
@@ -86,7 +91,8 @@ def _construir_prompt(
     confianza = diagnostico.get("confianza_ajustada",
                                 diagnostico.get("confianza_original", 0.0))
     sintomas_txt = ", ".join(sintomas) if sintomas else "no especificados"
-    bloque_docs = _formatear_documentos(documentos)
+    # Solo los mejores documentos van al prompt (los demás se usan para fuentes/caché)
+    bloque_docs = _formatear_documentos(documentos[:_MAX_DOCS_PROMPT])
 
     return f"""{estilo}
 

@@ -400,12 +400,16 @@ Derivado del código + naturaleza de PyTorch:
 - **VRAM:** si CNN/BERT corren en GPU, consumo modesto (cientos de MB). El **LLM corre en
   Ollama** (otra reserva de VRAM/RAM, fuera de este proceso).
 - **KV-cache:** ⚠️ pertenece a **Ollama**, no al microservicio.
-- **Límite de contexto (verificado con `ollama show`):** `qwen3.5:0.8b` y `qwen3.5:4b`
-  tienen ambos **262 144 tokens (256K)** de ventana de contexto. El prompt con `top_k=10`
-  documentos × `_MAX_CHARS_DOC=3500` ≈ 35 000 caracteres (~12K tokens) usa **<5%** del
-  contexto → **NO hay riesgo de overflow** con estos modelos. (La cuantización —Q8_0 / Q4_K_M—
-  no reduce la ventana de contexto.) Reducir los documentos enviados al LLM es una mejora de
-  **calidad/latencia** (evitar "lost in the middle"), no una necesidad de contexto.
+- **Límite de contexto — MÁXIMO del modelo vs. RUNTIME de Ollama (distinción crítica):**
+  - `ollama show` reporta un máximo de **262 144 tokens (256K)** para `qwen3.5:0.8b` y `4b`.
+  - **PERO `ollama ps` revela que el modelo se carga con `num_ctx=4096` por defecto.** Ese
+    es el contexto **efectivo** en ejecución, no los 256K.
+  - El prompt con `top_k=10` docs × `_MAX_CHARS_DOC` ≈ miles de tokens **desborda los 4096**
+    → Ollama trunca el prompt y se ralentiza (medido: ~40–60 s/respuesta con 10 docs).
+  - **Mitigaciones (ambas aplicadas en código):** (a) enviar al LLM solo los mejores docs
+    (`_MAX_DOCS_PROMPT=4`, env `MAX_DOCS_LLM`); (b) recortar cada doc (`_MAX_CHARS_DOC`).
+    Con esto la latencia baja a ~20 s. Alternativa/complemento: subir `num_ctx` en las
+    `options` del request a Ollama (cuesta más memoria).
 - **Limpieza:** liberar tensores intermedios (`torch.no_grad()` ya se usa en
   `predecir`/`evaluar`); en GPU, `torch.cuda.empty_cache()` si hay fragmentación.
 - **Límites:** fijar `MAX_IMAGEN_MB` y rechazar imágenes grandes antes de decodificarlas.
@@ -622,7 +626,7 @@ Derivados del código y la arquitectura:
 | Riesgo | Causa (evidencia) | Mitigación |
 |---|---|---|
 | **Dependencia dura de Ollama** | `_llamar_ollama` lanza `RuntimeError` si Ollama no responde | `/ready` que valide Ollama; mensaje de error claro; reintentos |
-| ~~Overflow de contexto~~ (descartado) | Verificado: contexto 256K en 0.8b y 4b (§9); el prompt usa <5% | No aplica. Reducir docs al LLM es por calidad, no por contexto |
+| **Overflow de contexto en runtime** | Modelo soporta 256K pero Ollama carga `num_ctx=4096` por defecto (`ollama ps`); 10 docs lo desbordan → lentitud (§9) | Enviar menos docs al LLM (`MAX_DOCS_LLM=4`) y/o `_MAX_CHARS_DOC`; o subir `num_ctx` |
 | **Timeout** | `OLLAMA_TIMEOUT=120` y 1ª carga del modelo GGUF es lenta | warmup de Ollama; subir timeout; `504` claro |
 | **OOM (RAM)** | cada worker carga CNN+BERT+torch (~2–3 GB) | limitar workers; medir; instancia con RAM suficiente |
 | **Lectura de pickle por petición** | `_cargar_indice`/`_cargar_embeddings` (latencia/IO) | cachear en memoria al `startup` |

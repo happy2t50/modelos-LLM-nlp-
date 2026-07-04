@@ -29,8 +29,9 @@ datos/*.pkl
 # Modelo BETO fine-tuneado (pesado, se regenera con finetune_beto.py)
 modelos/modelo_beto/
 
-# Modelo de clustering (se regenera con scripts/entrenar_clustering.py)
+# Modelos de clustering (se regeneran con los scripts de entrenamiento)
 modelos/clustering_kmeans.pkl
+modelos/clustering_documentos.pkl
 
 # Embeddings cacheados (se regeneran)
 datos/embeddings/

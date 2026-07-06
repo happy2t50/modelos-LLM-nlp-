@@ -1,81 +1,98 @@
-# Sistema de Diagnóstico Agrícola (CNN + NLP + RAG + LLM)
+# Sistema de Diagnóstico Agrícola — Backend IA (CNN · NLP · RAG · LLM · Clustering)
 
 Diagnóstico de enfermedades en cultivos a partir de **una foto + un texto de síntomas**,
-pensado para zonas con **poca o nula cobertura**. Funciona online (nube) y offline
-(dispositivo). Ver contexto completo en [CLAUDE.md](CLAUDE.md).
+para zonas con **poca o nula cobertura**. Backend de IA en Python con microservicio REST
+(FastAPI), que sirve a la app móvil **AgroGraph-MAS** (Flutter, repositorio aparte).
 
-## Estructura del proyecto
+> 📘 **Documentación técnica completa:** [`docs/DOCUMENTACION_TECNICA.md`](docs/DOCUMENTACION_TECNICA.md)
+> (arquitectura, módulos, endpoints, decisiones, integración, diagramas).
+> Contexto y decisiones del proyecto: [`CLAUDE.md`](CLAUDE.md).
+
+---
+
+## ¿Qué hace?
+
+```
+Imagen → CNN (cultivo+enfermedad) ─┐
+Texto  → NLP (síntomas) ───────────┤→ Fusión → Recuperación (TF-IDF+BERT) → LLM (Qwen) → Diagnóstico
+```
+
+Regla central de seguridad: las respuestas salen **solo de documentos**; el sistema
+**nunca inventa** dosis ni productos.
+
+## Estructura
 
 ```
 modelo/
-├── modulos/        ← NÚCLEO: la lógica del sistema (lo que corre en producción)
-│   ├── clasificador.py        CNN EfficientNet-B4 (foto → cultivo+enfermedad)
-│   ├── nlp_texto.py           interpreta el texto del usuario
-│   ├── fusion.py              combina imagen + texto
-│   ├── almacen_documentos.py  SQLite + TF-IDF + caché Top-K
-│   ├── busqueda_semantica.py  BERT + búsqueda híbrida
-│   ├── mis_cultivos.py        cultivos de la parcela
-│   ├── conexion.py            detección de internet
-│   ├── generador.py           Qwen (Ollama) redacta según rol
-│   └── asistente.py           orquestador (une todo)
-│
-├── ejecutar.py     ← punto de entrada por consola (CLI)
-├── interfaz.py     ← punto de entrada web de pruebas (Gradio)
-│
-├── scripts/        ← construcción y evaluación (NO corren en producción)
-│   ├── construir_corpus.py    arma el corpus combinado y los índices
-│   ├── evaluar_busqueda.py    métricas del motor de búsqueda (Req. #2)
-│   ├── finetune_beto.py       fine-tuning de BETO (Req. #3)
-│   └── comparar_cnns.py       comparación de 3 CNNs (Req. #1)
-│
-├── modelos/        ← pesos de modelos (no versionados; pesados)
-│   ├── best.pth               CNN entrenada (50 clases, ~97% F1)
-│   └── modelo_beto/           BETO fine-tuneado (se regenera)
-│
-├── datos/          ← base SQLite, índices y corpus (se regeneran)
-├── documentos/     ← documentos fuente curados (.txt)
-├── tests/          ← pruebas de cada módulo
-├── docs/           ← documentación y reportes de métricas
-│   ├── Plan_de_trabajo_ClaudeCode_v2.md
-│   ├── PLAN_microservicio.md
-│   ├── METRICAS_busqueda.md / METRICAS_beto.md / METRICAS_cnn_comparacion.md
-│   ├── mvp.md / busquedas.md   (documentación del equipo)
-├── extras/         ← material no esencial (no usado por el código)
-├── requirements.txt
-└── CLAUDE.md
+├── modulos/     NÚCLEO de dominio (clasificador, nlp_texto, fusion, almacen_documentos,
+│                busqueda_semantica, mis_cultivos, conexion, generador, asistente, clustering)
+├── app/         MICROSERVICIO REST (FastAPI): main, config, schemas, servicio, db, offline, campanias
+├── scripts/     Construcción de corpus y evaluación/entrenamiento (no producción)
+├── tests/       Pruebas por módulo
+├── datos/       SQLite, índices, corpus, campanias/*.csv
+├── documentos/  Fuentes curadas (.txt)
+├── modelos/     Pesos (best.pth, modelo_beto/, clustering_*.pkl — no versionados)
+├── docs/        Documentación y reportes de métricas
+├── ejecutar.py  CLI · interfaz.py  UI de pruebas (Gradio)
+└── requirements.txt · CLAUDE.md
 ```
 
-**Idea clave de la arquitectura:** `modulos/` es el corazón reutilizable; los puntos de
-entrada (`ejecutar.py`, `interfaz.py`) y los `scripts/` solo lo *invocan*. Eso permite
-empaquetar el mismo núcleo como microservicio en la nube o embebido en el móvil.
+**Arquitectura:** `modulos/` es el núcleo reutilizable; `app/`, `ejecutar.py`, `interfaz.py`
+y `scripts/` solo lo *invocan*. Ver [documentación técnica](docs/DOCUMENTACION_TECNICA.md).
 
 ## Puesta en marcha
 
 ```powershell
-# 1) Dependencias
 pip install -r requirements.txt
-
-# 2) Acentos en consola (Windows)
 set PYTHONUTF8=1
-
-# 3) Construir el corpus + índices (una vez, o al cambiar documentos)
-python scripts/construir_corpus.py
-
-# 4a) Usar por consola
-python ejecutar.py --imagen "ruta/foto.jpg" --texto "polvo blanco en hojas" --rol agricultor
-
-# 4b) O usar la interfaz web de pruebas
-python interfaz.py        # abre http://localhost:7860
+ollama pull qwen3.5:0.8b                # LLM (modo online)
+python scripts/construir_corpus.py      # corpus + índices (una vez)
 ```
 
-> El modo **online** requiere [Ollama](https://ollama.com) corriendo con el modelo:
-> `ollama pull qwen3.5:0.8b`. El modo **offline** responde desde el caché local.
+**Uso por consola:**
+```powershell
+python ejecutar.py --imagen "ruta/foto.jpg" --texto "polvo blanco en hojas" --rol agricultor
+```
 
-## Reproducir las métricas (requisitos del curso)
+**Interfaz web de pruebas:**
+```powershell
+python interfaz.py        # http://localhost:7860
+```
+
+## Microservicio REST (modo online)
 
 ```powershell
-python scripts/evaluar_busqueda.py     # Req. #2 — métricas del motor de búsqueda
-python scripts/finetune_beto.py        # Req. #3 — fine-tuning de BETO
-python scripts/comparar_cnns.py        # Req. #1 — comparación de 3 CNNs
+uvicorn app.main:app --host 0.0.0.0 --port 8000    # Swagger en /docs
 ```
-Los reportes se escriben en `docs/METRICAS_*.md`.
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| POST | `/api/v1/consultar` | Diagnóstico (CNN result + texto → RAG + LLM) |
+| GET | `/api/v1/inferences` · `/{id}` | Historial de inferencias |
+| POST | `/api/v1/clustering/inferir` | Clustering fitosanitario (no supervisado) |
+| GET | `/api/v1/clustering/mapa` · `/mapa-campanias` | Mapa epidemiológico (diagnósticos / campañas reales) |
+| GET | `/api/v1/offline/catalog` · `/documents/{id}` | Corpus + embeddings para RAG on-device |
+| GET | `/health` · `/ready` | Salud / readiness |
+
+Detalle de contratos: [documentación técnica §4 y §13](docs/DOCUMENTACION_TECNICA.md#4-rutas-endpoints-rest).
+
+## Modelos y métricas
+
+| Módulo | Métrica | Reporte |
+|---|---|---|
+| CNN EfficientNet-B4 (50 clases) | ~0.97 F1 | [comparación](docs/METRICAS_cnn_comparacion.md) |
+| Motor de búsqueda (TF-IDF/BERT) | MRR 0.747 | [métricas](docs/METRICAS_busqueda.md) |
+| BETO fine-tuneado (texto→cultivo) | F1 0.868 | [métricas](docs/METRICAS_beto.md) |
+| Clustering campañas (real) | silhouette 0.359 | [métricas](docs/METRICAS_clustering_campanias.md) |
+
+Reproducir:
+```powershell
+python scripts/evaluar_busqueda.py
+python scripts/finetune_beto.py
+python scripts/comparar_cnns.py
+python scripts/entrenar_clustering_campanias.py
+```
+
+---
+
+*Universidad Politécnica de Chiapas — proyecto de Minería de datos / LLM-NLP.*

@@ -27,6 +27,7 @@ from app import config
 from app.schemas import (
     ConsultaRequest, LlmResponse, HistorialResponse, InferenciaResumen,
     FeatureVectorRequest, ClusterResponse, MapaResponse,
+    CatalogResponse, DocumentDownloadResponse,
 )
 from app import servicio, db
 
@@ -130,6 +131,28 @@ async def clustering_inferir(vec: FeatureVectorRequest):
          tags=["clustering"], summary="Mapa epidemiológico (clusters por zona)")
 async def clustering_mapa():
     return db.mapa_epidemiologico()
+
+
+# ─────────────────────────────────────────────
+# Offline: catálogo y descarga de documentos (para RAG on-device)
+# ─────────────────────────────────────────────
+
+@app.get(config.PREFIJO_API + "/offline/catalog", response_model=CatalogResponse,
+         tags=["offline"], summary="Catálogo de documentos descargables")
+async def offline_catalog():
+    from app import offline
+    return offline.catalogo()
+
+
+@app.get(config.PREFIJO_API + "/offline/documents/{doc_id}",
+         response_model=DocumentDownloadResponse, tags=["offline"],
+         summary="Descargar un documento con sus chunks y embeddings (384-d)")
+async def offline_document(doc_id: str):
+    from app import offline
+    doc = await run_in_threadpool(offline.documento, doc_id)
+    if doc is None:
+        raise HTTPException(status_code=404, detail="Documento no encontrado")
+    return doc
 
 
 # ─────────────────────────────────────────────

@@ -102,3 +102,34 @@ class ZonaResumen(BaseModel):
 class MapaResponse(BaseModel):
     total: int
     zonas: list[ZonaResumen]
+
+
+# ── Offline: catálogo y descarga de documentos (🔌 puntos 1 y 2 del plan) ─────
+
+class CatalogItem(BaseModel):
+    id: str
+    crop_name: str
+    disease_name: str
+    title: str
+    source: str
+    size_bytes: int
+    version: str
+
+
+class CatalogResponse(BaseModel):
+    documents: list[CatalogItem]
+
+
+class ChunkModel(BaseModel):
+    id: str
+    index: int
+    text: str
+    embedding: list[float]   # 384-d (MiniLM-L12)
+
+
+class DocumentDownloadResponse(BaseModel):
+    id: str
+    content: str
+    size_bytes: int
+    embedding: list[float]   # embedding global (media de los chunks), 384-d
+    chunks: list[ChunkModel]

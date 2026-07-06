@@ -31,6 +31,8 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 | GET | `/api/v1/inferences/{id}` | Detalle de una inferencia |
 | POST | `/api/v1/clustering/inferir` | Asigna cluster fitosanitario a un diagnóstico (no supervisado) |
 | GET | `/api/v1/clustering/mapa` | Mapa epidemiológico (clusters por zona) |
+| GET | `/api/v1/offline/catalog` | Catálogo de documentos descargables (para RAG on-device) |
+| GET | `/api/v1/offline/documents/{id}` | Documento con chunks + embeddings (384-d) |
 | GET | `/health` | Liveness |
 | GET | `/ready` | Readiness (comprueba Ollama) |
 

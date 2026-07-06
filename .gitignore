@@ -32,6 +32,7 @@ modelos/modelo_beto/
 # Modelos de clustering (se regeneran con los scripts de entrenamiento)
 modelos/clustering_kmeans.pkl
 modelos/clustering_documentos.pkl
+modelos/clustering_campanias.pkl
 
 # Embeddings cacheados (se regeneran)
 datos/embeddings/

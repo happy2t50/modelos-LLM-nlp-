@@ -32,6 +32,7 @@ from modulos import mis_cultivos
 
 _DIR = Path(__file__).resolve().parent.parent
 _DIR_PDFS = Path(r"C:/Users/umina/OneDrive/Escritorio/documentos_fitosanitarios")
+_DIR_DRIVE = Path(r"C:/Users/umina/OneDrive/Escritorio/documentos_drive")
 _RUTA_JSON_COMPANERO = _DIR / "datos" / "corpus_procesado_lab1.json"
 _RUTA_JSON_COMBINADO = _DIR / "datos" / "corpus_combinado.json"
 
@@ -64,6 +65,34 @@ _MANIFIESTO = {
         ("papa", "plagas", "Guía Plagas de Papa — INIAP Ecuador"),
     "produccion_citricos.pdf":
         ("cítrico", "producción y enfermedades", "Producción de Limón y Naranja — INIFAP Morelos"),
+}
+
+# Manifiesto de los PDFs descargados de Google Drive (documentos_drive/).
+_MANIFIESTO_DRIVE = {
+    "14366_5126_La_roya_del_frijol_y_métodos_para_evaluar_la_enfermedad.pdf":
+        ("frijol", "roya", "La roya del frijol — INIFAP"),
+    "14404_5189_Acciones_para_la_campaña_contra_el_picudo_del_chile_a_escala_regional_en_Sinaloa.pdf":
+        ("chile", "picudo del chile", "Campaña picudo del chile en Sinaloa — INIFAP"),
+    "14542_5326_Descripción_y_control_de_la_mancha_angular_y_la_mustia_hilachosa_en_el_cultivo_de_frijol_en_Veracruz.pdf":
+        ("frijol", "mancha angular y mustia hilachosa", "Mancha angular y mustia hilachosa en frijol — INIFAP"),
+    "2007-0934-remexca-16-01-e3086-es-1.pdf":
+        ("frijol", "investigación fitosanitaria", "Revista Mexicana de Ciencias Agrícolas 16-01"),
+    "2007-0934-remexca-16-05-e3767-es-1.pdf":
+        ("maíz", "investigación fitosanitaria", "Revista Mexicana de Ciencias Agrícolas 16-05"),
+    "admin,+Editor_a+de+la+revista,+1)022-15++Esp.pdf":
+        ("general", "investigación fitosanitaria", "Artículo de revista agronómica (022-15)"),
+    "admin,+Editor_a+de+la+revista,+3Arti8(2)281-293.pdf":
+        ("general", "investigación fitosanitaria", "Artículo de revista agronómica (281-293)"),
+    "admin,+Editor_a+de+la+revista,+727-737+Art.pdf":
+        ("general", "investigación fitosanitaria", "Artículo de revista agronómica (727-737)"),
+    "admin,+Gestor_a+de+la+revista,+11)1523Esp.pdf":
+        ("general", "investigación fitosanitaria", "Artículo de revista agronómica (1523)"),
+    "admin,+Gestor_a+de+la+revista,+5)1665-1Esp.pdf":
+        ("maíz", "investigación fitosanitaria", "Artículo de revista agronómica (1665)"),
+    "dalia,+Maquetador,+2Art4041Esp-17.pdf":
+        ("general", "investigación fitosanitaria", "Artículo de revista agronómica (4041)"),
+    "PlagasFrijol.pdf":
+        ("frijol", "plagas", "Plagas del Frijol (INIFAP/SAGARPA)"),
 }
 
 # Cultivo para los registros del compañero, según su documento de origen.
@@ -119,11 +148,14 @@ def trocear(texto: str, tam: int = _TAM_FRAGMENTO) -> list[str]:
 
 
 def procesar_pdfs() -> list[dict]:
-    """Extrae, trocea y limpia los PDFs del manifiesto."""
+    """Extrae, trocea y limpia los PDFs de los manifiestos (fitosanitarios + Drive)."""
     registros = []
     print("== Procesando PDFs nuevos ==")
-    for archivo, (cultivo, tema, fuente) in _MANIFIESTO.items():
-        ruta = _DIR_PDFS / archivo
+    fuentes = list(_MANIFIESTO.items()) + list(_MANIFIESTO_DRIVE.items())
+    dirs = {**{a: _DIR_PDFS for a in _MANIFIESTO},
+            **{a: _DIR_DRIVE for a in _MANIFIESTO_DRIVE}}
+    for archivo, (cultivo, tema, fuente) in fuentes:
+        ruta = dirs[archivo] / archivo
         if not ruta.exists():
             print(f"  ⚠ no encontrado, se omite: {archivo}")
             continue

@@ -133,3 +133,19 @@ class DocumentDownloadResponse(BaseModel):
     size_bytes: int
     embedding: list[float]   # embedding global (media de los chunks), 384-d
     chunks: list[ChunkModel]
+
+
+# ── Mapa epidemiológico REAL (campañas fitosanitarias SENASICA) ──────────────
+
+class EstadoResumen(BaseModel):
+    estado: str
+    campanias: int
+    superficie_ha: float
+    productores: int
+    campania_dominante: str
+    cultivo_dominante: str
+
+
+class MapaCampaniasResponse(BaseModel):
+    total_campanias: int
+    estados: list[EstadoResumen]

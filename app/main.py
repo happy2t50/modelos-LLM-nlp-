@@ -27,7 +27,7 @@ from app import config
 from app.schemas import (
     ConsultaRequest, LlmResponse, HistorialResponse, InferenciaResumen,
     FeatureVectorRequest, ClusterResponse, MapaResponse,
-    CatalogResponse, DocumentDownloadResponse,
+    CatalogResponse, DocumentDownloadResponse, MapaCampaniasResponse,
 )
 from app import servicio, db
 
@@ -128,9 +128,17 @@ async def clustering_inferir(vec: FeatureVectorRequest):
 
 
 @app.get(config.PREFIJO_API + "/clustering/mapa", response_model=MapaResponse,
-         tags=["clustering"], summary="Mapa epidemiológico (clusters por zona)")
+         tags=["clustering"], summary="Mapa epidemiológico (clusters de diagnósticos por zona)")
 async def clustering_mapa():
     return db.mapa_epidemiologico()
+
+
+@app.get(config.PREFIJO_API + "/clustering/mapa-campanias",
+         response_model=MapaCampaniasResponse, tags=["clustering"],
+         summary="Mapa epidemiológico REAL (campañas SENASICA por estado)")
+async def clustering_mapa_campanias():
+    from app import campanias
+    return await run_in_threadpool(campanias.mapa)
 
 
 # ─────────────────────────────────────────────

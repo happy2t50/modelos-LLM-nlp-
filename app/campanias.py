@@ -71,3 +71,49 @@ def mapa() -> dict:
         })
     estados.sort(key=lambda x: x["superficie_ha"], reverse=True)
     return {"total_campanias": len(filas), "estados": estados}
+
+
+def _norm(s: str) -> str:
+    """Normaliza para comparar estados (minúsculas, sin acentos ni espacios extra)."""
+    import unicodedata
+    s = unicodedata.normalize("NFKD", (s or "").strip().lower())
+    return "".join(c for c in s if not unicodedata.combining(c))
+
+
+def alerta(estado: str | None = None) -> dict:
+    """
+    Alerta epidemiológica real. Si se da un estado, devuelve la campaña/plaga
+    dominante de ese estado; si no, la de mayor superficie a nivel nacional.
+    Datos reales de campañas fitosanitarias (SENASICA).
+    """
+    filas = _cargar()
+    if not filas:
+        return {"hay_alerta": False, "estado": estado or "",
+                "mensaje": "No existen alertas para tu región."}
+
+    if estado:
+        objetivo = _norm(estado)
+        filas = [f for f in filas if _norm(f["estado"]) == objetivo]
+        if not filas:
+            return {"hay_alerta": False, "estado": estado,
+                    "mensaje": "No existen alertas para tu región."}
+
+    campania = Counter(f["campania"] for f in filas).most_common(1)[0][0]
+    # plaga y cultivo dominantes dentro de la campaña dominante
+    de_camp = [f for f in filas if f["campania"] == campania]
+    plaga = Counter(f["plaga"] for f in de_camp if f["plaga"]).most_common(1)
+    cultivo = Counter(f["cultivo"] for f in de_camp if f["cultivo"]).most_common(1)
+    superficie = round(sum(f["superficie"] for f in de_camp), 1)
+
+    ambito = f"en {estado}" if estado else "a nivel nacional"
+    return {
+        "hay_alerta": True,
+        "estado": estado or "Nacional",
+        "campania_dominante": campania,
+        "plaga_dominante": plaga[0][0] if plaga else "",
+        "cultivo_dominante": cultivo[0][0] if cultivo else "",
+        "campanias": len(de_camp),
+        "superficie_ha": superficie,
+        "mensaje": f"Campaña activa {ambito}: {campania}"
+                   + (f" ({cultivo[0][0]})" if cultivo else "") + ".",
+    }

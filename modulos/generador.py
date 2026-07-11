@@ -121,16 +121,20 @@ DOCUMENTOS DISPONIBLES:
 {bloque_docs}
 
 Con base SOLO en los documentos anteriores, redacta la respuesta con estas secciones,
-usando exactamente estos encabezados:
+usando exactamente estos encabezados. En TRATAMIENTO y PREVENCIÓN escribe **una lista
+con viñetas**, un paso por línea, empezando cada línea con "- " (guion y espacio).
 
 DIAGNÓSTICO:
 (breve confirmación de la enfermedad y el cultivo)
 
 TRATAMIENTO:
-(qué hacer; SI los documentos mencionan dosis y productos concretos, INCLÚYELOS aquí)
+- (paso 1; SI los documentos mencionan dosis y productos concretos, INCLÚYELOS)
+- (paso 2)
+- (paso 3)
 
 PREVENCIÓN:
-(cómo evitar que vuelva)
+- (medida 1 para evitar que vuelva)
+- (medida 2)
 
 FUENTES:
 (lista las fuentes de los documentos que usaste)

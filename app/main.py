@@ -19,15 +19,43 @@ from contextlib import asynccontextmanager
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+import json
+import base64
+
 import requests
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Header
 from fastapi.concurrency import run_in_threadpool
 
 from app import config
 from app.schemas import (
     ConsultaRequest, LlmResponse, HistorialResponse, InferenciaResumen,
-    CatalogResponse, DocumentDownloadResponse, MapaCampaniasResponse,
+    CatalogResponse, DocumentDownloadResponse, MapaCampaniasResponse, AlertaResponse,
 )
+
+
+def _rol_desde_jwt(authorization: str | None) -> str | None:
+    """
+    Lee el claim 'rol' de un JWT 'Bearer <token>' SIN verificar la firma.
+    Stopgap hasta que exista auth real: el rol solo cambia el TONO de la
+    respuesta (no da acceso), por lo que leerlo sin verificar es de bajo riesgo.
+    Devuelve None si no hay token o no trae 'rol'.
+    """
+    if not authorization or not authorization.lower().startswith("bearer "):
+        return None
+    try:
+        token = authorization.split(" ", 1)[1]
+        payload_b64 = token.split(".")[1]
+        payload_b64 += "=" * (-len(payload_b64) % 4)  # padding base64url
+        datos = json.loads(base64.urlsafe_b64decode(payload_b64))
+        rol = datos.get("rol") or datos.get("role")
+        # normaliza 'aprendiz_agricola' → 'aprendiz'
+        if rol and "aprendiz" in str(rol).lower():
+            return "aprendiz"
+        if rol and "agricultor" in str(rol).lower():
+            return "agricultor"
+        return rol
+    except Exception:
+        return None
 from app import servicio, db
 
 
@@ -70,7 +98,12 @@ app = FastAPI(
 
 @app.post(config.PREFIJO_API + "/consultar", response_model=LlmResponse,
           tags=["inferencia"], summary="Diagnóstico (CNN result + texto → RAG + LLM)")
-async def consultar_endpoint(req: ConsultaRequest):
+async def consultar_endpoint(req: ConsultaRequest,
+                             authorization: str | None = Header(None)):
+    # El rol viene del JWT si está presente (como espera la app); si no, del body.
+    rol_jwt = _rol_desde_jwt(authorization)
+    if rol_jwt:
+        req.rol = rol_jwt
     t0 = time.time()
     try:
         resultado = await run_in_threadpool(servicio.ejecutar_consulta, req)
@@ -118,6 +151,15 @@ async def detalle_endpoint(inference_id: str):
 async def clustering_mapa_campanias():
     from app import campanias
     return await run_in_threadpool(campanias.mapa)
+
+
+@app.get(config.PREFIJO_API + "/alertas", response_model=AlertaResponse,
+         tags=["clustering"],
+         summary="Alerta epidemiológica real (campaña dominante por estado)")
+async def alerta_epidemiologica(estado: str | None = Query(
+        None, description="Entidad federativa; si se omite, alerta nacional")):
+    from app import campanias
+    return await run_in_threadpool(campanias.alerta, estado)
 
 
 # ─────────────────────────────────────────────

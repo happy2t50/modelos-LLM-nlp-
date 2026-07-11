@@ -108,3 +108,14 @@ class EstadoResumen(BaseModel):
 class MapaCampaniasResponse(BaseModel):
     total_campanias: int
     estados: list[EstadoResumen]
+
+
+class AlertaResponse(BaseModel):
+    hay_alerta: bool
+    estado: str
+    mensaje: str
+    campania_dominante: Optional[str] = None
+    plaga_dominante: Optional[str] = None
+    cultivo_dominante: Optional[str] = None
+    campanias: Optional[int] = None
+    superficie_ha: Optional[float] = None

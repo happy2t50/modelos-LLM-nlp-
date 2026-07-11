@@ -63,47 +63,6 @@ class HistorialResponse(BaseModel):
     items: list[InferenciaResumen]
 
 
-# ── Clustering fitosanitario (no supervisado) ────────────────────────────────
-
-class FeatureVectorRequest(BaseModel):
-    """AgendaFeatureVector (del plan) que el cliente envía para asignarle cluster."""
-    diagnosisId: Optional[str] = None
-    cropName: str = ""
-    diseaseName: str = ""
-    zona: str = ""
-    cnnConfidence: float = 0.0
-    topKEntropy: float = 0.0
-    llmConfianzaAjustada: float = 0.0
-    llmEstado: float = 1.0
-    llmSinDocumentos: float = 0.0
-    sintomasCount: float = 0.0
-    avisosCount: float = 0.0
-    diagnosticoLength: float = 0.0
-    completionRate: float = 0.0
-    daysSinceCreation: float = 0.0
-    isComplete: float = 0.0
-    hasRelapse: float = 0.0
-    diagnosisMonth: int = 1
-
-
-class ClusterResponse(BaseModel):
-    cluster_id: int
-    cluster_label: str
-    zona: str
-
-
-class ZonaResumen(BaseModel):
-    zona: str
-    cluster_dominante: str
-    casos: int
-    total: int
-
-
-class MapaResponse(BaseModel):
-    total: int
-    zonas: list[ZonaResumen]
-
-
 # ── Offline: catálogo y descarga de documentos (🔌 puntos 1 y 2 del plan) ─────
 
 class CatalogItem(BaseModel):

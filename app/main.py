@@ -26,7 +26,6 @@ from fastapi.concurrency import run_in_threadpool
 from app import config
 from app.schemas import (
     ConsultaRequest, LlmResponse, HistorialResponse, InferenciaResumen,
-    FeatureVectorRequest, ClusterResponse, MapaResponse,
     CatalogResponse, DocumentDownloadResponse, MapaCampaniasResponse,
 )
 from app import servicio, db
@@ -110,28 +109,8 @@ async def detalle_endpoint(inference_id: str):
 
 
 # ─────────────────────────────────────────────
-# Clustering fitosanitario (no supervisado) + mapa epidemiológico
+# Mapa epidemiológico REAL (campañas fitosanitarias SENASICA)
 # ─────────────────────────────────────────────
-
-@app.post(config.PREFIJO_API + "/clustering/inferir", response_model=ClusterResponse,
-          tags=["clustering"], summary="Asignar cluster fitosanitario a un diagnóstico")
-async def clustering_inferir(vec: FeatureVectorRequest):
-    from modulos import clustering
-    try:
-        resultado = clustering.predecir_cluster(vec.model_dump())
-    except RuntimeError as e:
-        raise HTTPException(status_code=503, detail=str(e))
-    db.guardar_clustering(vec.zona, resultado["cluster_id"],
-                          resultado["cluster_label"], vec.model_dump())
-    return {"cluster_id": resultado["cluster_id"],
-            "cluster_label": resultado["cluster_label"], "zona": vec.zona}
-
-
-@app.get(config.PREFIJO_API + "/clustering/mapa", response_model=MapaResponse,
-         tags=["clustering"], summary="Mapa epidemiológico (clusters de diagnósticos por zona)")
-async def clustering_mapa():
-    return db.mapa_epidemiologico()
-
 
 @app.get(config.PREFIJO_API + "/clustering/mapa-campanias",
          response_model=MapaCampaniasResponse, tags=["clustering"],

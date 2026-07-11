@@ -32,60 +32,8 @@ def _conectar() -> sqlite3.Connection:
         )
     """)
     con.execute("CREATE INDEX IF NOT EXISTS idx_inf_fecha ON inferencias (created_at DESC)")
-    con.execute("""
-        CREATE TABLE IF NOT EXISTS clustering (
-            id            TEXT PRIMARY KEY,
-            created_at    TEXT NOT NULL,
-            zona          TEXT,
-            cluster_id    INTEGER,
-            cluster_label TEXT,
-            features_json TEXT
-        )
-    """)
     con.commit()
     return con
-
-
-def guardar_clustering(zona: str, cluster_id: int, cluster_label: str,
-                       features: dict) -> str:
-    """Persiste una asignación de cluster (para el mapa epidemiológico)."""
-    cid = "clu_" + uuid.uuid4().hex[:12]
-    creado = datetime.now(timezone.utc).isoformat()
-    con = _conectar()
-    con.execute(
-        "INSERT INTO clustering (id, created_at, zona, cluster_id, cluster_label, "
-        "features_json) VALUES (?,?,?,?,?,?)",
-        (cid, creado, zona, cluster_id, cluster_label,
-         json.dumps(features, ensure_ascii=False)),
-    )
-    con.commit()
-    con.close()
-    return cid
-
-
-def mapa_epidemiologico() -> dict:
-    """Agrega los clusters por zona → mapa epidemiológico."""
-    con = _conectar()
-    total = con.execute("SELECT COUNT(*) FROM clustering").fetchone()[0]
-    filas = con.execute(
-        "SELECT zona, cluster_label, COUNT(*) AS n FROM clustering "
-        "GROUP BY zona, cluster_label"
-    ).fetchall()
-    con.close()
-
-    por_zona: dict[str, dict] = {}
-    for f in filas:
-        z = f["zona"] or "(sin zona)"
-        por_zona.setdefault(z, {"total": 0, "conteos": {}})
-        por_zona[z]["conteos"][f["cluster_label"]] = f["n"]
-        por_zona[z]["total"] += f["n"]
-
-    zonas = []
-    for z, info in sorted(por_zona.items()):
-        dom = max(info["conteos"].items(), key=lambda kv: kv[1]) if info["conteos"] else ("-", 0)
-        zonas.append({"zona": z, "cluster_dominante": dom[0],
-                      "casos": dom[1], "total": info["total"]})
-    return {"total": total, "zonas": zonas}
 
 
 def guardar_inferencia(request: dict, response: dict, modo: str,

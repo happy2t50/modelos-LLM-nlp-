@@ -29,16 +29,14 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 | POST | `/api/v1/consultar` | Resultado CNN + texto → diagnóstico (RAG + LLM) |
 | GET | `/api/v1/inferences` | Historial paginado (`limit`, `offset`) |
 | GET | `/api/v1/inferences/{id}` | Detalle de una inferencia |
-| POST | `/api/v1/clustering/inferir` | Asigna cluster fitosanitario a un diagnóstico (no supervisado) |
-| GET | `/api/v1/clustering/mapa` | Mapa epidemiológico de diagnósticos (clusters por zona) |
 | GET | `/api/v1/clustering/mapa-campanias` | **Mapa epidemiológico REAL** (campañas SENASICA por estado) |
 | GET | `/api/v1/offline/catalog` | Catálogo de documentos descargables (para RAG on-device) |
 | GET | `/api/v1/offline/documents/{id}` | Documento con chunks + embeddings (384-d) |
 | GET | `/health` | Liveness |
 | GET | `/ready` | Readiness (comprueba Ollama) |
 
-> El clustering requiere entrenar el modelo una vez:
-> `python scripts/entrenar_clustering.py` (genera `modelos/clustering_kmeans.pkl`).
+> El mapa epidemiológico usa **datos reales** de campañas fitosanitarias (SENASICA)
+> en `datos/campanias/*.csv`. No hay datos sintéticos en el servicio.
 
 ## Contrato de `/api/v1/consultar`
 
